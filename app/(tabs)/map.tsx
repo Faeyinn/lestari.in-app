@@ -1,3 +1,4 @@
+import { FilterModal } from '@/components/map/FilterModal';
 import { HeatmapMarker } from '@/components/map/HeatmapMarker';
 import { PointsCard } from '@/components/map/PointsCard';
 import { SearchBar } from '@/components/map/SearchBar';
@@ -7,7 +8,7 @@ import { BottomNav } from '@/components/navigation/BottomNav';
 import { apiService } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   StyleSheet,
@@ -97,6 +98,12 @@ const wasteLocations = [
 export default function MapScreen() {
   const [selectedWaste, setSelectedWaste] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterVisible, setFilterVisible] = useState(false);
+  const [filters, setFilters] = useState<{ order?: 'Terbaru' | 'Terlama' | null; categories: string[]; labels: string[] }>({
+    order: null,
+    categories: [],
+    labels: [],
+  });
   const [apiReports, setApiReports] = useState<any[]>([]);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [userProfile, setUserProfile] = useState<{ name: string; points: number } | null>(null);
@@ -107,20 +114,39 @@ export default function MapScreen() {
     fetchUserProfile();
   }, []);
 
+  // refresh profile (dipanggil juga dari PointsCard.onExchangePress)
+  const handleRefreshProfile = async () => {
+    try {
+      const response = await apiService.getProfile();
+      const apiData = response.data;
+      setUserProfile({
+        name: apiData.user?.name || 'User',
+        points: apiData.points || apiData.user?.points || 0,
+      });
+    } catch (error) {
+      console.error('Failed to refresh profile:', error);
+    }
+  };
+
   const fetchReports = async () => {
     try {
       const response = await apiService.getAllReports();
-      const transformedReports = response.data.map((report: any) => ({
-        id: `api-${report.id}`,
-        coordinate: { latitude: report.latitude, longitude: report.longitude },
-        title: getCategoryFromReport(report),
-        category: report.verified ? 'Diverifikasi' : 'Belum ditindaklanjuti',
-        date: new Date(report.created_at).toLocaleDateString('id-ID'),
-        location: `Lat: ${report.latitude.toFixed(4)}, Lng: ${report.longitude.toFixed(4)}`,
-        image: report.image_url,
-        type: getTypeFromReport(report) as 'waste' | 'fire' | 'recycle',
-        intensity: 'medium' as const,
-      }));
+      const transformedReports = response.data.map((report: any) => {
+        const ts = report.created_at ? new Date(report.created_at).getTime() : Date.now();
+        return {
+          id: `api-${report.id}`,
+          coordinate: { latitude: report.latitude, longitude: report.longitude },
+          title: getCategoryFromReport(report),
+          category: report.verified ? 'Diverifikasi' : 'Belum ditindaklanjuti',
+          date: new Date(report.created_at).toLocaleDateString('id-ID'),
+          timestamp: ts,
+          location: `Lat: ${report.latitude.toFixed(4)}, Lng: ${report.longitude.toFixed(4)}`,
+          image: report.image_url,
+          type: getTypeFromReport(report) as 'waste' | 'fire' | 'recycle',
+          intensity: 'medium' as const,
+          labels: report.labels || [], // optional
+        };
+      });
       setApiReports(transformedReports);
     } catch (error) {
       console.error('Failed to fetch reports:', error);
@@ -166,7 +192,7 @@ export default function MapScreen() {
       const apiData = response.data;
       setUserProfile({
         name: apiData.user?.name || 'User',
-        points: apiData.points || 0,
+        points: apiData.points || apiData.user?.points || 0,
       });
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
@@ -181,11 +207,94 @@ export default function MapScreen() {
     setSelectedWaste(waste);
   };
 
-  // Combine API reports with dummy data (keep 3 dummy)
-  const allWasteLocations = [
-    ...wasteLocations.slice(0, 3), // Keep first 3 dummy
-    ...apiReports,
-  ];
+  const handleApplyFilters = useCallback((filtersParam: any) => {
+    setFilters({
+      order: filtersParam.order || null,
+      categories: filtersParam.categories || [],
+      labels: filtersParam.labels || [],
+    });
+    setFilterVisible(false);
+    console.log('Applied filters:', filtersParam);
+  }, []);
+
+  // ensure dummy items have timestamp (recent) and optional labels
+  const dummyWithTs = wasteLocations.slice(0, 3).map((w, i) => ({
+    ...w,
+    timestamp: Date.now() - i * 86400000, // spacing by 1 day
+    labels: w.labels || [],
+    // normalize category for filtering if needed
+    category:
+      w.category && ['Sampah', 'Kualitas Air', 'Penebangan Hutan', 'Kebakaran Hutan'].includes(w.category)
+        ? w.category
+        : w.type === 'waste'
+        ? 'Sampah'
+        : w.type === 'fire'
+        ? 'Kebakaran Hutan'
+        : w.type === 'recycle'
+        ? 'Penebangan Hutan'
+        : w.category || 'Laporan',
+  }));
+
+  const allWasteLocations = [...dummyWithTs, ...apiReports];
+
+  // helper: check marker category (normalized)
+  const markerCategory = (m: any) => {
+    if (m.category) return m.category;
+    if (m.type === 'waste') return 'Sampah';
+    if (m.type === 'fire') return 'Kebakaran Hutan';
+    if (m.type === 'recycle') return 'Penebangan Hutan';
+    return 'Laporan';
+  };
+
+  const applyFiltersToLocations = (locations: any[], f: typeof filters) => {
+    let out = locations.slice();
+
+    // Category filter
+    if (f.categories && f.categories.length > 0) {
+      out = out.filter((loc) => f.categories.includes(markerCategory(loc)));
+    }
+
+    // Labels filter (if markers have labels property)
+    if (f.labels && f.labels.length > 0) {
+      out = out.filter((loc) => {
+        if (!loc.labels || !Array.isArray(loc.labels)) return false;
+        return f.labels.some((L) => loc.labels.includes(L));
+      });
+    }
+
+    // Search query filter (basic, checks title/location)
+    if (searchQuery && searchQuery.trim().length > 0) {
+      const q = searchQuery.toLowerCase();
+      out = out.filter(
+        (loc) =>
+          String(loc.title || '').toLowerCase().includes(q) ||
+          String(loc.location || '').toLowerCase().includes(q)
+      );
+    }
+
+    // Order sorting by timestamp if available
+    out.sort((a, b) => {
+      const ta = a.timestamp || 0;
+      const tb = b.timestamp || 0;
+      if (f.order === 'Terbaru') return tb - ta;
+      if (f.order === 'Terlama') return ta - tb;
+      return tb - ta; // default newest first
+    });
+
+    return out;
+  };
+
+  // Terapkan filter hanya pada dummy markers
+  const filteredDummy = useMemo(
+    () => applyFiltersToLocations(dummyWithTs, filters),
+    [dummyWithTs, filters, searchQuery]
+  );
+
+  // Gabungkan dummy yang sudah difilter dengan semua laporan API (API tetap tampil tanpa filter)
+  const combinedFilteredLocations = useMemo(
+    () => [...filteredDummy, ...apiReports],
+    [filteredDummy, apiReports]
+  );
 
   return (
     <View style={styles.container}>
@@ -208,7 +317,7 @@ export default function MapScreen() {
         )}
 
         {/* Waste Location Markers with Heatmap */}
-        {allWasteLocations.map((waste) => (
+        {combinedFilteredLocations.map((waste) => (
           <HeatmapMarker
             key={waste.id}
             coordinate={waste.coordinate}
@@ -240,8 +349,12 @@ export default function MapScreen() {
             style={styles.pointsCardContainer}
           >
             <PointsCard
-              points={userProfile ? 500 - userProfile.points : 300}
+              points={userProfile?.points ?? 0}
               maxPoints={500}
+              onExchangePress={async () => {
+                // contoh: refresh profile dari backend saat tombol ditekan
+                await handleRefreshProfile();
+              }}
             />
           </Animated.View>
         </View>
@@ -255,8 +368,16 @@ export default function MapScreen() {
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Telusuri Lokasi"
+            onFilterPress={() => setFilterVisible(true)}
           />
         </Animated.View>
+
+       {/* Filter Modal */}
+       <FilterModal
+         visible={filterVisible}
+         onClose={() => setFilterVisible(false)}
+         onApply={handleApplyFilters}
+       />
 
         {/* Waste Card */}
         {selectedWaste && (

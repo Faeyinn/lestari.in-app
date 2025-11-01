@@ -32,10 +32,6 @@ export const ProfileBadge: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Tag "Penjaga Air Bersih" */}
-      <View style={styles.tag}>
-        <Text style={styles.tagText}>Penjaga Air Bersih</Text>
-      </View>
 
       {/* Lingkaran Badge */}
       <View style={styles.badgeCircle}>

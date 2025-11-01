@@ -2,17 +2,18 @@ import { ReportDescriptionInput } from '@/components/report/ReportDescriptionInp
 import { ReportHeader } from '@/components/report/ReportHeader';
 import { ReportSubmitButton } from '@/components/report/ReportSubmitButton';
 import { apiService } from '@/services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // <-- added
 import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  View,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    View,
 } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -65,7 +66,6 @@ export default function ReportDetailScreen() {
       Alert.alert('Deskripsi Kosong', 'Mohon masukkan deskripsi kondisi lingkungan.');
       return;
     }
-
     if (!location) {
       Alert.alert('Location Error', 'Unable to get your location. Please try again.');
       return;
@@ -82,21 +82,16 @@ export default function ReportDetailScreen() {
       });
       console.log('Report submitted successfully:', response);
 
-      // Show detailed classification results from Gemini analysis
-      const classifications = [];
-      if (response.data?.water_classification) classifications.push(`Air: ${response.data.water_classification}`);
-      if (response.data?.forest_classification) classifications.push(`Hutan: ${response.data.forest_classification}`);
-      if (response.data?.public_fire_classification) classifications.push(`Kebakaran Umum: ${response.data.public_fire_classification}`);
-      if (response.data?.trash_classification) classifications.push(`Sampah: ${response.data.trash_classification}`);
-      if (response.data?.illegal_logging_classification) classifications.push(`Penebangan Liar: ${response.data.illegal_logging_classification}`);
+      // Refresh profile from backend to get updated points
+      try {
+        const profileRes = await apiService.getProfile();
+        // optional: cache profile so other screens can read immediately
+        await AsyncStorage.setItem('profile_cache', JSON.stringify(profileRes.data));
+      } catch (err) {
+        console.warn('Failed to refresh profile after submit:', err);
+      }
 
-      const classificationText = classifications.length > 0
-        ? `\nKlasifikasi: ${classifications.join(', ')}`
-        : '';
-
-      const message = `Laporan Terkirim!${classificationText}\nTerima kasih atas kontribusi Anda.`;
-
-      Alert.alert('Laporan Terkirim', message, [
+      Alert.alert('Laporan Terkirim', 'Terima kasih! Laporan Anda berhasil dikirim.', [
         { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (error: any) {

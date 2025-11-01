@@ -1,17 +1,19 @@
-import React from 'react';
-import { View, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
 interface SearchBarProps {
   value: string;
   onChangeText: (text: string) => void;
   placeholder?: string;
+  onFilterPress?: () => void;
 }
 
 export const SearchBar: React.FC<SearchBarProps> = ({
   value,
   onChangeText,
   placeholder = 'Telusuri Lokasi',
+  onFilterPress,
 }) => {
   return (
     <View style={styles.container}>
@@ -28,7 +30,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       </View>
 
       {/* Filter Button */}
-      <TouchableOpacity style={styles.filterButton} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={styles.filterButton}
+        activeOpacity={0.7}
+        onPress={onFilterPress}
+      >
         <Ionicons name="filter" size={22} color="#FFFFFF" />
       </TouchableOpacity>
     </View>

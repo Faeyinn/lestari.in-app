@@ -3,6 +3,7 @@ import { LaporanSegmentedControl } from '@/components/laporan/LaporanSegmentedCo
 import { ReportSearchBar } from '@/components/laporan/ReportSearchBar';
 import { BottomNav } from '@/components/navigation/BottomNav';
 import { apiService } from '@/services/api';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   FlatList,
@@ -136,6 +137,7 @@ const myReportsData: Report[] = [
 type ActiveTab = 'Semua Laporan' | 'Laporan Saya';
 
 export default function LaporanScreen() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>('Semua Laporan');
@@ -239,13 +241,24 @@ export default function LaporanScreen() {
     report.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handlePressReport = (item: Report) => {
+    // If this item is an appended dummy we try to extract original id
+    const rawId = String(item.id);
+    const realId = rawId.startsWith('appended-') ? rawId.split('-').slice(-1)[0] : rawId;
+    if (activeTab === 'Laporan Saya') {
+      router.push(`/laporan/mine/${realId}`);
+    } else {
+      router.push(`/laporan/${realId}`);
+    }
+  };
+
   const renderItem: ListRenderItem<Report> = ({ item, index }) => (
     <Animated.View
       entering={FadeInDown.delay(index * 100)
         .duration(500)
         .springify()}
     >
-      <LaporanCard report={item} />
+      <LaporanCard report={item} onPress={() => handlePressReport(item)} />
     </Animated.View>
   );
 

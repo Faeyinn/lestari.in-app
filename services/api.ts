@@ -211,6 +211,19 @@ class ApiService {
     }
   }
 
+  // NEW: helper untuk langsung mengambil angka points dari profile
+  async getPoints(): Promise<number> {
+    try {
+      const profileRes = await this.getProfile();
+      // asumsi backend mengembalikan { user: {...}, points: number } atau { points: number }
+      const points = profileRes.data.points ?? profileRes.data.user?.points ?? 0;
+      return points;
+    } catch (error: any) {
+      console.warn('Failed to fetch points:', error?.message || error);
+      return 0;
+    }
+  }
+
   async isAuthenticated(): Promise<boolean> {
     const token = await AsyncStorage.getItem('access_token');
     return !!token;

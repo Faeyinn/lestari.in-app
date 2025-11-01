@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { apiService } from '@/services/api';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -8,14 +9,43 @@ import Animated, {
 
 interface RemainingPointsCardProps {
   points: number;
+  onExchangePress?: () => void;
 }
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 export const RemainingPointsCard: React.FC<RemainingPointsCardProps> = ({
   points,
+  onExchangePress,
 }) => {
   const scale = useSharedValue(1);
+
+  const [localPoints, setLocalPoints] = useState<number | null>(
+    typeof points === 'number' ? points : null
+  );
+  const [loading, setLoading] = useState<boolean>(false);
+
+  // If parent doesn't provide points, fetch from backend
+  useEffect(() => {
+    let mounted = true;
+    const loadPoints = async () => {
+      if (typeof points === 'number') return; // parent provided
+      setLoading(true);
+      try {
+        const p = await apiService.getPoints();
+        if (mounted) setLocalPoints(p);
+      } catch (err) {
+        console.warn('Failed to load points in RemainingPointsCard', err);
+        if (mounted) setLocalPoints(0);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    loadPoints();
+    return () => {
+      mounted = false;
+    };
+  }, [points]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
@@ -42,11 +72,21 @@ export const RemainingPointsCard: React.FC<RemainingPointsCardProps> = ({
         <Text style={styles.label}>Poin Tersisa</Text>
 
         <View style={styles.pointsContainer}>
-          <Text style={styles.pointsValue}>{points}</Text>
-          <Text style={styles.pointsLabel}>XP</Text>
+          {loading ? (
+            <ActivityIndicator size="small" color="#2D5F4F" />
+          ) : (
+            <>
+              <Text style={styles.pointsValue}>{typeof points === 'number' ? points : localPoints ?? 0}</Text>
+              <Text style={styles.pointsLabel}>XP</Text>
+            </>
+          )}
         </View>
 
-        <TouchableOpacity style={styles.exchangeButton} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.exchangeButton}
+          activeOpacity={0.8}
+          onPress={onExchangePress}
+        >
           <Text style={styles.exchangeButtonText}>Tukar Poin</Text>
         </TouchableOpacity>
       </View>

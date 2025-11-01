@@ -1,12 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 interface LeaderboardEntry {
   id: string;
   rank: number;
   name: string;
-  xp: number;
+  xp?: number;
+  points?: number;
   badge: any;
 }
 
@@ -16,6 +17,7 @@ interface RankItemProps {
 }
 
 export const RankItem: React.FC<RankItemProps> = ({ entry, index }) => {
+  const value = entry.points ?? entry.xp ?? 0;
   return (
     <Animated.View
       entering={FadeInDown.delay(index * 50).duration(400)}
@@ -26,8 +28,8 @@ export const RankItem: React.FC<RankItemProps> = ({ entry, index }) => {
         <Text style={styles.name}>{entry.name}</Text>
       </View>
       <View style={styles.xpInfo}>
-        <Text style={styles.xp}>{entry.xp} XP</Text>
-        <Image source={entry.badge} style={styles.badge} resizeMode="contain" />
+        <Text style={styles.xp}>{value} XP</Text>
+        {entry.badge ? <Image source={entry.badge} style={styles.badge} resizeMode="contain" /> : null}
       </View>
     </Animated.View>
   );

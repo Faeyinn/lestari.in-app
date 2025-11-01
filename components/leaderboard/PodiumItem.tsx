@@ -1,12 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 interface LeaderboardEntry {
   id: string;
   rank: number;
   name: string;
-  xp: number;
+  xp?: number;
+  points?: number;
   badge: any;
 }
 
@@ -28,6 +29,7 @@ const textColors = {
 };
 
 export const PodiumItem: React.FC<PodiumItemProps> = ({ entry, rank }) => {
+  const value = entry.points ?? entry.xp ?? 0;
   return (
     <Animated.View
       style={[
@@ -47,9 +49,11 @@ export const PodiumItem: React.FC<PodiumItemProps> = ({ entry, rank }) => {
       </View>
       <View style={styles.xpInfo}>
         <Text style={[styles.xp, { color: textColors[rank] }]}>
-          {entry.xp} XP
+          {value} XP
         </Text>
-        <Image source={entry.badge} style={styles.badge} resizeMode="contain" />
+        {entry.badge ? (
+          <Image source={entry.badge} style={styles.badge} resizeMode="contain" />
+        ) : null}
       </View>
     </Animated.View>
   );

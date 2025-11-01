@@ -1,17 +1,18 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 interface UserCardProps {
   name: string;
   points: number;
   contribution: string;
+  maxPoints?: number;
 }
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
-export const UserCard: React.FC<UserCardProps> = ({ name, points, contribution }) => {
+export const UserCard: React.FC<UserCardProps> = ({ name, points, contribution, maxPoints = 500 }) => {
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => {
@@ -28,7 +29,7 @@ export const UserCard: React.FC<UserCardProps> = ({ name, points, contribution }
     scale.value = withSpring(1);
   };
 
-  const progressPercentage = 90; // Calculate based on actual progress
+  const progressPercentage = Math.min(100, Math.round((points / maxPoints) * 100));
 
   return (
     <AnimatedTouchable
@@ -50,7 +51,7 @@ export const UserCard: React.FC<UserCardProps> = ({ name, points, contribution }
         <View style={styles.pointsContainer}>
           <View style={styles.pointsLeft}>
             <Text style={styles.label}>Total Poin Kontribusi</Text>
-            <Text style={styles.contribution}>{contribution}</Text>
+            <Text style={styles.contribution}>{contribution || `${points} XP`}</Text>
           </View>
 
           <View style={styles.pointsRight}>
@@ -70,7 +71,7 @@ export const UserCard: React.FC<UserCardProps> = ({ name, points, contribution }
             />
           </View>
           <Text style={styles.progressText}>
-            450 XP
+            {points} XP
           </Text>
         </View>
       </LinearGradient>

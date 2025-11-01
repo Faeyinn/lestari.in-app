@@ -1,16 +1,19 @@
+import { useRouter } from 'expo-router'; // added import
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 interface PointsCardProps {
   points: number;
   maxPoints: number;
+  onExchangePress?: () => void;
 }
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
-export const PointsCard: React.FC<PointsCardProps> = ({ points, maxPoints }) => {
+export const PointsCard: React.FC<PointsCardProps> = ({ points, maxPoints, onExchangePress }) => {
   const scale = useSharedValue(1);
+  const router = useRouter(); // use router
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
@@ -24,6 +27,14 @@ export const PointsCard: React.FC<PointsCardProps> = ({ points, maxPoints }) => 
 
   const handlePressOut = () => {
     scale.value = withSpring(1);
+  };
+
+  // navigate to /tukar-poin when pressing Tukar Poin
+  const handleExchange = () => {
+    if (onExchangePress) {
+      try { onExchangePress(); } catch {}
+    }
+    router.push('/tukar-poin');
   };
 
   return (
@@ -40,8 +51,8 @@ export const PointsCard: React.FC<PointsCardProps> = ({ points, maxPoints }) => 
           <Text style={styles.pointsValue}>{points}</Text>
           <Text style={styles.pointsLabel}>XP</Text>
         </View>
-
-        <TouchableOpacity style={styles.exchangeButton} activeOpacity={0.8}>
+        
+        <TouchableOpacity style={styles.exchangeButton} activeOpacity={0.8} onPress={handleExchange}>
           <Text style={styles.exchangeButtonText}>Tukar Poin</Text>
         </TouchableOpacity>
       </View>
