@@ -3,6 +3,8 @@ import { BadgeAchievements } from '@/components/profile/BadgeAchievements';
 import { MenuButton } from '@/components/profile/MenuButton';
 import { ProfileBadge } from '@/components/profile/ProfileBadge';
 import { ProfileHeader } from '@/components/profile/ProfileHeader';
+import { ProfileSummaryCard } from '@/components/profile/ProfileSummaryCard';
+import { RemainingPointsCard } from '@/components/profile/RemainingPointsCard';
 import { StatsCard } from '@/components/profile/StatsCard';
 import { apiService } from '@/services/api';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,11 +15,9 @@ import {
   Alert,
   ScrollView,
   StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+  View,
 } from 'react-native';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface ProfileData {
@@ -27,38 +27,44 @@ interface ProfileData {
   points?: number;
   reports_sent?: number;
   reports_verified?: number;
-  environmental_guardian?: number;
+  rank?: number;
 }
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const [profileData, setProfileData] = useState<ProfileData | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Data dummy yang sesuai dengan desain
+  const [profileData, setProfileData] = useState<ProfileData>({
+    name: 'Beyonder',
+    email: 'beyonder@gmail.com',
+    city: 'Mahasiswa',
+    points: 450,
+    reports_sent: 15,
+    reports_verified: 10,
+    rank: 4,
+  });
+  const [loading, setLoading] = useState(false); // Dimatikan untuk preview
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await apiService.getProfile();
-        setProfileData(response.data);
-      } catch (error: any) {
-        Alert.alert('Error', 'Failed to load profile data');
-        // Redirect to login if not authenticated
-        router.replace('/login');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, []);
+  // useEffect(() => {
+  //   const fetchProfile = async () => {
+  //     setLoading(true);
+  //     try {
+  //       const response = await apiService.getProfile();
+  //       setProfileData(response.data);
+  //     } catch (error: any) {
+  //       Alert.alert('Error', 'Failed to load profile data');
+  //       router.replace('/login');
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchProfile();
+  // }, []);
 
   const handleEditProfile = () => {
-    // Navigate to edit profile
     router.push('/edit-profile');
   };
 
   const handleLeaderboard = () => {
-    // Navigate to leaderboard
     router.push('/leaderboard');
   };
 
@@ -80,102 +86,86 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header with gradient */}
+        {/* Header dengan gradient dan lengkungan */}
         <View style={styles.header}>
           <LinearGradient
-            colors={['#6B9D73', '#2D5F4F']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+            colors={['#4A9D6F', '#2D5F4F']} // stronger gradient as design
             style={styles.gradient}
           >
             <SafeAreaView edges={['top']}>
-              <Animated.View
-                entering={FadeInUp.delay(100).duration(600).springify()}
-              >
+              <Animated.View entering={FadeInDown.delay(100).duration(600)}>
                 <ProfileHeader
-                  name={profileData.name || "User"}
-                  city={profileData.city || "Mahasiswa"}
+                  name={profileData.name}
+                  city={profileData.city || 'Mahasiswa'}
                   email={profileData.email}
                 />
               </Animated.View>
             </SafeAreaView>
           </LinearGradient>
 
-          {/* Badge in center */}
+          {/* Badge di tengah, overlap lebih besar */}
           <Animated.View
-            entering={FadeInUp.delay(200).duration(600).springify()}
+            entering={FadeInDown.delay(200).duration(600)}
             style={styles.badgeContainer}
           >
             <ProfileBadge />
           </Animated.View>
         </View>
 
-        {/* Content */}
+        {/* Konten Utama */}
         <View style={styles.content}>
-          {/* User Card with Points */}
-          <Animated.View
-            entering={FadeInDown.delay(300).duration(600).springify()}
-            style={styles.pointsCardContainer}
-          >
-            <LinearGradient
-              colors={['#8FBC8F', '#2D5F4F']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.pointsCard}
+          {/* Kartu Poin */}
+          <View style={styles.pointsRow}>
+            {/* Kartu Poin Utama (Besar) */}
+            <Animated.View
+              entering={FadeInDown.delay(300).duration(600)}
+              style={styles.summaryCardContainer}
             >
-              <View style={styles.pointsContent}>
-                <View style={styles.pointsLeft}>
-                  <Text style={styles.userName}>{profileData.name || "User"}</Text>
-                  <Text style={styles.pointsLabel}>Total Poin Kontribusi</Text>
-                  <Text style={styles.contribution}>
-                    50 KG dari ditargetkan level 5
-                  </Text>
-                </View>
+              <ProfileSummaryCard
+                name={profileData.name}
+                points={profileData.points || 0}
+                progress={90}
+                progressText="50 XP lagi menuju level 5"
+                maxPoints={500}
+              />
+            </Animated.View>
 
-                <View style={styles.pointsRight}>
-                  <Text style={styles.pointsValue}>{profileData.points || 0}</Text>
-                  <Text style={styles.pointsUnit}>Pts</Text>
-                  <TouchableOpacity style={styles.exchangeButton}>
-                    <Text style={styles.exchangeButtonText}>
-                      Tukar{'\n'}Poin
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+            {/* Kartu Poin Tersisa (Kecil) */}
+            <Animated.View
+              entering={FadeInDown.delay(400).duration(600)}
+              style={styles.remainingPointsContainer}
+            >
+              <RemainingPointsCard points={300} />
+            </Animated.View>
+          </View>
 
-              {/* Progress Bar */}
-              <View style={styles.progressContainer}>
-                <View style={styles.progressBar}>
-                  <View style={[styles.progressFill, { width: '90%' }]} />
-                </View>
-                <Text style={styles.progressText}>
-                  90% <Text style={styles.progressMax}>dari 500 Pts</Text>
-                </Text>
-              </View>
-            </LinearGradient>
-          </Animated.View>
-
-          {/* Stats Cards */}
+          {/* Kartu Statistik */}
           <Animated.View
-            entering={FadeInDown.delay(400).duration(600).springify()}
+            entering={FadeInDown.delay(500).duration(600)}
             style={styles.statsContainer}
           >
-            <StatsCard title="Laporan Dikirim" value={profileData.reports_sent?.toString() || "0"} />
-            <StatsCard title="Laporan Terverifikasi" value={profileData.reports_verified?.toString() || "0"} />
-            <StatsCard title="Penjaga Lingkungan" value={profileData.environmental_guardian?.toString() || "0"} gradient />
+            <StatsCard
+              title="Laporan Dikirim"
+              value={profileData.reports_sent?.toString() || '0'}
+            />
+            <StatsCard
+              title="Laporan Terverifikasi"
+              value={profileData.reports_verified?.toString() || '0'}
+            />
+            <StatsCard
+              title="Peringkat Kontribusi"
+              value={profileData.rank?.toString() || '0'}
+              gradient
+            />
           </Animated.View>
 
           {/* Badge Achievements */}
-          <Animated.View
-            entering={FadeInDown.delay(500).duration(600).springify()}
-          >
+          <Animated.View entering={FadeInDown.delay(600).duration(600)}>
             <BadgeAchievements />
           </Animated.View>
 
-          {/* Menu Buttons */}
-          <Animated.View
-            entering={FadeInDown.delay(600).duration(600).springify()}
-          >
+          {/* Tombol Menu */}
+          <Animated.View entering={FadeInDown.delay(700).duration(600)}>
             <MenuButton
               title="Edit Profil"
               onPress={handleEditProfile}
@@ -183,9 +173,7 @@ export default function ProfileScreen() {
             />
           </Animated.View>
 
-          <Animated.View
-            entering={FadeInDown.delay(700).duration(600).springify()}
-          >
+          <Animated.View entering={FadeInDown.delay(800).duration(600)}>
             <MenuButton
               title="Leaderboard"
               onPress={handleLeaderboard}
@@ -195,6 +183,7 @@ export default function ProfileScreen() {
         </View>
       </ScrollView>
 
+      {/* Navigasi Bawah */}
       <BottomNav activeRoute="profile" />
     </View>
   );
@@ -203,30 +192,32 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F7FBF8',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F7FBF8',
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
   header: {
     position: 'relative',
-    paddingBottom: 60,
+    paddingBottom: 90, // ruang untuk badge overlap lebih besar
+    backgroundColor: '#F7FBF8',
   },
   gradient: {
-    paddingBottom: 80,
+    height: 240, // lebih tinggi agar lengkung lebih besar seperti desain
     borderBottomLeftRadius: 1000,
     borderBottomRightRadius: 1000,
-    transform: [{ scaleX: 2 }],
+    transform: [{ scaleX: 1.3 }],
+    overflow: 'hidden',
   },
   badgeContainer: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 20, // tumpang tindih lebih besar sehingga badge menonjol
     left: 0,
     right: 0,
     alignItems: 'center',
@@ -234,106 +225,18 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
-    marginTop: 16,
+    marginTop: 18,
   },
-  pointsCardContainer: {
+  pointsRow: {
+    flexDirection: 'row',
     marginBottom: 16,
-    borderRadius: 20,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
+    gap: 12,
   },
-  pointsCard: {
-    padding: 20,
-    paddingBottom: 16,
-  },
-  pointsContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  pointsLeft: {
+  summaryCardContainer: {
     flex: 1,
   },
-  userName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 8,
-  },
-  pointsLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  contribution: {
-    fontSize: 10,
-    fontWeight: '400',
-    color: 'rgba(255, 255, 255, 0.9)',
-  },
-  pointsRight: {
-    alignItems: 'center',
-  },
-  pointsValue: {
-    fontSize: 42,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    lineHeight: 46,
-  },
-  pointsUnit: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginTop: -4,
-    marginBottom: 6,
-  },
-  exchangeButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  exchangeButtonText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    lineHeight: 13,
-  },
-  progressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  progressBar: {
-    flex: 1,
-    height: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 3,
-  },
-  progressText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  progressMax: {
-    fontWeight: '400',
-    opacity: 0.85,
+  remainingPointsContainer: {
+    width: 120, // sedikit lebih lebar agar proporsi sesuai desain
   },
   statsContainer: {
     flexDirection: 'row',

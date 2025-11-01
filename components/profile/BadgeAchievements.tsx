@@ -1,10 +1,10 @@
 import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
-    useAnimatedStyle,
-    useSharedValue,
-    withDelay,
-    withSpring,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSpring,
 } from 'react-native-reanimated';
 
 const badges = [
@@ -50,7 +50,11 @@ const BadgeItem: React.FC<BadgeItemProps> = ({ badge, index }) => {
         activeOpacity={0.9}
       >
         <View style={styles.badgeItem}>
-          <Image source={badge.image} style={styles.badgeIcon} resizeMode="contain" />
+          <Image
+            source={badge.image}
+            style={styles.badgeIcon}
+            resizeMode="contain"
+          />
         </View>
       </TouchableOpacity>
     </Animated.View>
@@ -74,7 +78,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
     marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: {
@@ -89,21 +93,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#1F2937',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   badgesContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    gap: 12,
     alignItems: 'center',
   },
   badgeItem: {
-    width: 64,
-    height: 64,
+    width: 56,
+    height: 56,
     justifyContent: 'center',
     alignItems: 'center',
   },
   badgeIcon: {
-    width: 60,
-    height: 60,
+    width: 52,
+    height: 52,
   },
 });

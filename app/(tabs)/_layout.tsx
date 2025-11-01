@@ -9,7 +9,13 @@ export default function TabsLayout() {
     >
       <Stack.Screen name="map" />
       <Stack.Screen name="chat" />
-      <Stack.Screen name="report" />
+      <Stack.Screen 
+        name="report" 
+        options={{
+          presentation: 'transparentModal', // Menjadikannya modal overlay
+          animation: 'fade', // Animasi fade untuk latar belakang
+        }}
+      />
       <Stack.Screen name="laporan" />
       <Stack.Screen name="profile" />
     </Stack>

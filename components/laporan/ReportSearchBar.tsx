@@ -2,13 +2,13 @@ import React from 'react';
 import { View, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-interface LaporanSearchBarProps {
+interface ReportSearchBarProps {
   value: string;
   onChangeText: (text: string) => void;
   placeholder?: string;
 }
 
-export const LaporanSearchBar: React.FC<LaporanSearchBarProps> = ({
+export const ReportSearchBar: React.FC<ReportSearchBarProps> = ({
   value,
   onChangeText,
   placeholder = 'Telusuri Laporan',
@@ -28,7 +28,7 @@ export const LaporanSearchBar: React.FC<LaporanSearchBarProps> = ({
       </View>
 
       {/* Filter Button */}
-      <TouchableOpacity style={styles.filterButton} activeOpacity={0.7}>
+      <TouchableOpacity style={styles.filterButton} activeOpacity={0.8}>
         <Ionicons name="filter" size={22} color="#FFFFFF" />
       </TouchableOpacity>
     </View>
@@ -45,10 +45,10 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 28, // Membuatnya bulat penuh (pill shape)
+    height: 48,
     paddingHorizontal: 16,
-    paddingVertical: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
@@ -64,9 +64,17 @@ const styles = StyleSheet.create({
   filterButton: {
     width: 48,
     height: 48,
-    borderRadius: 12,
-    backgroundColor: '#2D5F4F',
+    borderRadius: 24, // Bulat sempurna
+    backgroundColor: '#2D5F4F', // Warna hijau tua
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
   },
 });

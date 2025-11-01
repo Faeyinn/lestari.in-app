@@ -1,15 +1,49 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { BottomNav } from '@/components/navigation/BottomNav';
+import { View, StyleSheet, Pressable, Image } from 'react-native';
+import { useRouter } from 'expo-router';
+import Animated, { FadeIn, SlideInDown, SlideOutDown } from 'react-native-reanimated';
+import { ReportCameraView } from '@/components/report/ReportCameraView';
+
+// Dapatkan referensi ke gambar placeholder
+const trashImage = require('@/assets/images/placeholder-waste.png');
 
 export default function ReportScreen() {
+  const router = useRouter();
+
+  const handleClose = () => {
+    if (router.canGoBack()) {
+      router.back();
+    }
+  };
+
+  const handleTakePhoto = () => {
+    // Dapatkan URI gambar yang akan dikirim ke layar berikutnya
+    const imageUri = Image.resolveAssetSource(trashImage).uri;
+
+    router.replace({ 
+      pathname: '/report-detail', 
+      params: { imageUri: imageUri } 
+    });
+  };
+
   return (
     <View style={styles.container}>
-      <SafeAreaView style={styles.content}>
-        <Text style={styles.title}>Laporkan</Text>
-      </SafeAreaView>
-      <BottomNav activeRoute="report" />
+      {/* Latar Belakang Overlay */}
+      <Pressable style={StyleSheet.absoluteFill} onPress={handleClose}>
+        <Animated.View
+          entering={FadeIn.duration(200)}
+          style={styles.overlay}
+        />
+      </Pressable>
+
+      {/* Konten Modal yang slide dari bawah */}
+      <Animated.View
+        entering={SlideInDown.duration(400).springify()}
+        exiting={SlideOutDown.duration(300).springify()}
+        style={styles.modalContainer}
+      >
+        <ReportCameraView onTakePhoto={handleTakePhoto} />
+      </Animated.View>
     </View>
   );
 }
@@ -17,16 +51,14 @@ export default function ReportScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1F2937',
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  modalContainer: {
+    width: '100%',
   },
 });

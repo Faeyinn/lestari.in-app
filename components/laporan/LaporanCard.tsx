@@ -1,13 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
 
-interface Report {
+// Tipe Status untuk pewarnaan
+type ReportStatus = 'Diverifikasi' | 'Menunggu Verifikasi' | 'Selesai' | 'Ditolak';
+
+export interface Report {
   id: string;
   category: string;
   labels: string[];
@@ -16,12 +18,40 @@ interface Report {
   author: string;
   date: string;
   image: string;
+  status: ReportStatus; // Menambahkan status
 }
 
 interface LaporanCardProps {
   report: Report;
   onPress?: () => void;
 }
+
+// Fungsi untuk mendapatkan warna berdasarkan status
+const getStatusColor = (status: ReportStatus) => {
+  switch (status) {
+    case 'Diverifikasi':
+      return '#22C55E'; // Hijau
+    case 'Menunggu Verifikasi':
+      return '#F59E0B'; // Kuning/Orange
+    case 'Selesai':
+      return '#3B82F6'; // Biru (atau bisa diganti hijau)
+    case 'Ditolak':
+      return '#EF4444'; // Merah
+    default:
+      return '#6B7280'; // Abu-abu
+  }
+};
+
+// Fungsi untuk mendapatkan warna label
+const getLabelColor = (label: string) => {
+  if (label.includes('Kebakaran') || label.includes('Ilegal') || label.includes('Banyak')) {
+    return { bg: '#FEE2E2', text: '#DC2626' }; // Merah
+  }
+  if (label.includes('Anorganik') || label.includes('Air Keruh')) {
+    return { bg: '#FEF3C7', text: '#D97706' }; // Kuning
+  }
+  return { bg: '#E0E7FF', text: '#4F46E5' }; // Default
+};
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
@@ -35,7 +65,7 @@ export const LaporanCard: React.FC<LaporanCardProps> = ({ report, onPress }) => 
   });
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.97);
+    scale.value = withSpring(0.98);
   };
 
   const handlePressOut = () => {
@@ -51,63 +81,81 @@ export const LaporanCard: React.FC<LaporanCardProps> = ({ report, onPress }) => 
       activeOpacity={0.95}
     >
       <View style={styles.card}>
-        {/* Image */}
+        {/* Gambar di Kiri */}
         <Image
           source={{ uri: report.image }}
           style={styles.image}
           resizeMode="cover"
         />
 
-        {/* Content */}
+        {/* Konten di Kanan */}
         <View style={styles.content}>
-          {/* Category */}
-          <View style={styles.row}>
-            <Text style={styles.fieldLabel}>Kategori :</Text>
-            <Text style={styles.categoryText}>{report.category}</Text>
-          </View>
-
-          {/* Labels */}
-          <View style={styles.row}>
-            <Text style={styles.fieldLabel}>Label :</Text>
-            <View style={styles.labelsContainer}>
-              {report.labels.map((label, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.labelBadge,
-                    index === 0 ? styles.labelBadgePrimary : styles.labelBadgeSecondary,
-                  ]}
+          {/* Baris Atas: Status, Author, Date */}
+          <View style={styles.headerRow}>
+            {report.status && (
+              <View style={[styles.statusContainer]}>
+                <Text style={styles.fieldLabel}>Status</Text>
+                <Text style={styles.colon}>:</Text>
+                <Text
+                  style={[styles.statusText, { color: getStatusColor(report.status) }]}
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
                 >
-                  <Text
-                    style={[
-                      styles.labelText,
-                      index === 0 ? styles.labelTextPrimary : styles.labelTextSecondary,
-                    ]}
-                  >
-                    {label}
-                  </Text>
-                </View>
-              ))}
+                  {report.status}
+                </Text>
+              </View>
+            )}
+            <View style={styles.authorDateContainer}>
+              <Text style={styles.authorText}>{report.author}</Text>
+              <Text style={styles.dateText}>{report.date}</Text>
             </View>
           </View>
 
-          {/* Location */}
+          {/* Kategori */}
           <View style={styles.row}>
-            <Text style={styles.fieldLabel}>Lokasi :</Text>
+            <Text style={styles.fieldLabel}>Kategori</Text>
+            <Text style={styles.colon}>:</Text>
+            <Text style={styles.categoryText}>{report.category}</Text>
+          </View>
+
+          {/* Label */}
+          <View style={styles.row}>
+            <Text style={styles.fieldLabel}>Label</Text>
+            <Text style={styles.colon}>:</Text>
+            <View style={styles.labelsContainer}>
+              {report.labels.map((label, index) => {
+                const colors = getLabelColor(label);
+                return (
+                  <View
+                    key={index}
+                    style={[
+                      styles.labelBadge,
+                      { backgroundColor: colors.bg },
+                    ]}
+                  >
+                    <Text style={[styles.labelText, { color: colors.text }]}>
+                      {label}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Lokasi */}
+          <View style={styles.row}>
+            <Text style={styles.fieldLabel}>Lokasi</Text>
+            <Text style={styles.colon}>:</Text>
             <Text style={styles.locationText}>{report.location}</Text>
           </View>
 
-          {/* Description */}
+          {/* Deskripsi */}
           <View style={styles.descriptionRow}>
             <Text style={styles.fieldLabel}>Deskripsi</Text>
           </View>
-          <Text style={styles.descriptionText}>{report.description}</Text>
-
-          {/* Author and Date */}
-          <View style={styles.footer}>
-            <Text style={styles.authorText}>{report.author}</Text>
-            <Text style={styles.dateText}>{report.date}</Text>
-          </View>
+          <Text style={styles.descriptionText} numberOfLines={2}>
+            {report.description}
+          </Text>
         </View>
       </View>
     </AnimatedTouchable>
@@ -120,7 +168,8 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 20,
+    flexDirection: 'row',
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: {
@@ -129,91 +178,104 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 3,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   image: {
-    width: '100%',
-    height: 140,
+    width: 110,
+    height: '100%',
     backgroundColor: '#E5E7EB',
   },
   content: {
-    padding: 16,
+    flex: 1,
+    padding: 12,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 6,
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 8
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: '700',
+    flexShrink: 1,
+    flexWrap: 'wrap',
+    lineHeight: 14,
+  },
+  authorDateContainer: {
+    alignItems: 'flex-end',
+    marginLeft: 8,
+    flexShrink: 0,
+  },
+  authorText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  dateText: {
+    fontSize: 9,
+    fontWeight: '400',
+    color: '#9CA3AF',
   },
   row: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
+    alignItems: 'flex-start',
+    marginBottom: 6,
     flexWrap: 'wrap',
   },
   descriptionRow: {
-    marginBottom: 6,
+    marginBottom: 4,
   },
   fieldLabel: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '700',
     color: '#1F2937',
-    marginRight: 8,
+    width: 60, // Lebar tetap untuk perataan
+  },
+  colon: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginRight: 4,
   },
   categoryText: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#EF4444',
+    color: '#D97706', // Warna orange untuk kategori
+    flexShrink: 1,
   },
   labelsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 4,
     flex: 1,
   },
   labelBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
     borderRadius: 6,
   },
-  labelBadgePrimary: {
-    backgroundColor: '#FEE2E2',
-  },
-  labelBadgeSecondary: {
-    backgroundColor: '#FEF3C7',
-  },
   labelText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
-  },
-  labelTextPrimary: {
-    color: '#DC2626',
-  },
-  labelTextSecondary: {
-    color: '#D97706',
   },
   locationText: {
-    fontSize: 13,
-    fontWeight: '400',
+    fontSize: 11,
+    fontWeight: '500',
     color: '#4B5563',
+    flexShrink: 1,
   },
   descriptionText: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: '#6B7280',
-    lineHeight: 18,
-    marginBottom: 12,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  authorText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#1F2937',
-  },
-  dateText: {
     fontSize: 11,
     fontWeight: '400',
-    color: '#9CA3AF',
+    color: '#6B7280',
+    lineHeight: 16,
   },
 });

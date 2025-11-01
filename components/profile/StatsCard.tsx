@@ -31,7 +31,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   });
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.95);
+    scale.value = withSpring(0.97);
   };
 
   const handlePressOut = () => {
@@ -41,14 +41,14 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   if (gradient) {
     return (
       <AnimatedTouchable
-        style={[styles.container, animatedStyle]}
+        style={[styles.container, styles.gradientContainer]}
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         activeOpacity={0.9}
       >
         <LinearGradient
-          colors={['#8FBC8F', '#4A9D6F']}
+          colors={['#7CB97D', '#4A9D6F']} // Gradien hijau
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradientCard}
@@ -62,7 +62,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
 
   return (
     <AnimatedTouchable
-      style={[styles.container, animatedStyle]}
+      style={[styles.container, styles.whiteContainer]}
       onPress={onPress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
@@ -80,7 +80,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     borderRadius: 16,
-    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -90,8 +89,13 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
   },
-  card: {
+  whiteContainer: {
     backgroundColor: '#FFFFFF',
+  },
+  gradientContainer: {
+    overflow: 'hidden', // Pastikan gradien tidak bocor
+  },
+  card: {
     padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
@@ -104,26 +108,26 @@ const styles = StyleSheet.create({
     minHeight: 100,
   },
   title: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     color: '#6B7280',
     textAlign: 'center',
     marginBottom: 8,
   },
   titleGradient: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 8,
   },
   value: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: '700',
     color: '#1F2937',
   },
   valueGradient: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: '700',
     color: '#FFFFFF',
   },
