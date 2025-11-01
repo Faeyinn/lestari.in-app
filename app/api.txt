@@ -1,0 +1,37 @@
+# 1. Signup
+signup_url = 'http://127.0.0.1:8000/api/signup/'
+signup_data = {
+    'email': 'newuser@example.com',
+    'name': 'New User',
+    'password': 'securepassword123'
+}
+response = requests.post(signup_url, json=signup_data)
+print('Signup:', response.json())
+
+# 2. Login
+login_url = 'http://127.0.0.1:8000/api/login/'
+login_data = {
+    'email': 'newuser@example.com',
+    'password': 'securepassword123'
+}
+response = requests.post(login_url, json=login_data)
+login_response = response.json()
+access_token = login_response['access']
+print('Login:', login_response)
+
+# 3. Get Profile
+profile_url = 'http://127.0.0.1:8000/api/profile/'
+headers = {'Authorization': f'Bearer {access_token}'}
+response = requests.get(profile_url, headers=headers)
+print('Profile:', response.json())
+
+# 4. Update Profile
+update_data = {'bio': 'I am passionate about environmental conservation!'}
+response = requests.put(profile_url, json=update_data, headers=headers)
+print('Updated Profile:', response.json())
+
+# 5. Chat with Bot
+chatbot_url = 'http://127.0.0.1:8000/api/chatbot/'
+chat_data = {'message': 'How can I reduce my carbon footprint?'}
+response = requests.post(chatbot_url, json=chat_data, headers=headers)
+print('Chatbot:', response.json())

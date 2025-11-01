@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'http://b242be31f1c1.ngrok-free.app/api';
+export const API_BASE_URL = 'https://06084014a5bc.ngrok-free.app/';
 
 export const API_ENDPOINTS = {
   signup: '/signup/',

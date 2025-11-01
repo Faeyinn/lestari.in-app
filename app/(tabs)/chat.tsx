@@ -4,6 +4,7 @@ import { LestarHeader } from '@/components/chat/LestarHeader';
 import { apiService } from '@/services/api';
 import React, { useRef, useState } from 'react';
 import { Alert, FlatList, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface Message {
   id: string;
@@ -92,7 +93,7 @@ export default function LestarChatScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <LestarHeader />
 
       <KeyboardAvoidingView
@@ -137,7 +138,7 @@ export default function LestarChatScreen() {
           />
         </View>
       </KeyboardAvoidingView>
-    </View>
+    </SafeAreaView>
   );
 }
 

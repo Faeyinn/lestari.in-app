@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -18,7 +18,12 @@ export const LestarHeader = () => {
 
       <View style={styles.logoContainer}>
         <View style={styles.logo}>
-          <Text style={styles.logoEmoji}>🌱</Text>
+          <Image
+            source={require('@/assets/images/icon.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+            accessibilityLabel="Lestar Bot Icon"
+          />
         </View>
       </View>
 
@@ -58,8 +63,9 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 4,
   },
-  logoEmoji: {
-    fontSize: 20,
+  logoImage: {
+    width: 28,
+    height: 28,
   },
   title: {
     fontSize: 18,

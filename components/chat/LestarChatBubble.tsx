@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 interface LestarChatBubbleProps {
@@ -7,6 +7,8 @@ interface LestarChatBubbleProps {
   isBot: boolean;
   index: number;
 }
+
+const botIcon = require('@/assets/images/icon.png');
 
 export const LestarChatBubble: React.FC<LestarChatBubbleProps> = ({
   message,
@@ -21,7 +23,7 @@ export const LestarChatBubble: React.FC<LestarChatBubbleProps> = ({
       {isBot && (
         <View style={styles.botAvatarContainer}>
           <View style={styles.botAvatar}>
-            <Text style={styles.avatarEmoji}>🌱</Text>
+            <Image source={botIcon} style={styles.botAvatarImage} resizeMode="contain" />
           </View>
         </View>
       )}
@@ -32,13 +34,12 @@ export const LestarChatBubble: React.FC<LestarChatBubbleProps> = ({
             {message}
           </Text>
         </View>
-        
-        <View
-          style={[
-            styles.secondaryBubble,
-            isBot ? styles.botSecondaryBubble : styles.userSecondaryBubble,
-          ]}
-        />
+
+        {/* secondary bubble removed for bot per request.
+            Keep secondary bubble only for user messages if needed */}
+        {!isBot && (
+          <View style={[styles.secondaryBubble, styles.userSecondaryBubble]} />
+        )}
       </View>
 
       {!isBot && (
@@ -66,12 +67,22 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   botAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#2D5F4F',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  botAvatarImage: {
+    width: 28,
+    height: 28,
   },
   avatarEmoji: {
     fontSize: 16,
@@ -109,8 +120,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#4A9D6F',
     borderTopLeftRadius: 4,
   },
+  // user bubble changed to bright green
   userBubble: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#34D399', // terang green
     borderTopRightRadius: 4,
     alignSelf: 'flex-end',
   },
@@ -124,11 +136,9 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
-  botSecondaryBubble: {
-    backgroundColor: '#D4F1E3',
-  },
+  // keep user secondary bubble subtle (optional)
   userSecondaryBubble: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#CFFAE6',
     alignSelf: 'flex-end',
   },
   messageText: {
@@ -139,8 +149,9 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '400',
   },
+  // make user text white for contrast with bright green
   userText: {
-    color: '#1F2937',
+    color: '#FFFFFF',
     fontWeight: '400',
   },
 });
