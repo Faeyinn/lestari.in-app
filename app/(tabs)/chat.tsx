@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
-import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
-import { LestarHeader } from '@/components/chat/LestarHeader';
 import { LestarChatBubble } from '@/components/chat/LestarChatBubble';
 import { LestarChatInput } from '@/components/chat/LestarChatInput';
+import { LestarHeader } from '@/components/chat/LestarHeader';
+import { apiService } from '@/services/api';
+import React, { useRef, useState } from 'react';
+import { Alert, FlatList, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 
 interface Message {
   id: string;
@@ -41,9 +42,10 @@ const initialMessages: Message[] = [
 export default function LestarChatScreen() {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputText, setInputText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (inputText.trim() === '') return;
 
     const newMessage: Message = {
@@ -54,17 +56,35 @@ export default function LestarChatScreen() {
     };
 
     setMessages((prev) => [...prev, newMessage]);
+    const userMessage = inputText;
     setInputText('');
+    setIsTyping(true);
 
     setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+
+    try {
+      const response = await apiService.sendChatbotMessage({ message: userMessage });
+      setIsTyping(false);
       const botResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: 'Terima kasih atas pesan Anda! Saya akan membantu Anda.',
+        text: response.data.response || 'Terima kasih atas pesan Anda! Saya akan membantu Anda.',
         isBot: true,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, botResponse]);
-    }, 1000);
+    } catch (error: any) {
+      setIsTyping(false);
+      Alert.alert('Error', 'Failed to send message. Please try again.');
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: 'Maaf, terjadi kesalahan. Silakan coba lagi.',
+        isBot: true,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    }
 
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
@@ -95,6 +115,17 @@ export default function LestarChatScreen() {
           showsVerticalScrollIndicator={false}
           onContentSizeChange={() =>
             flatListRef.current?.scrollToEnd({ animated: true })
+          }
+          ListFooterComponent={
+            isTyping ? (
+              <View style={styles.typingContainer}>
+                <LestarChatBubble
+                  message="Lestar Bot sedang mengetik..."
+                  isBot={true}
+                  index={messages.length}
+                />
+              </View>
+            ) : null
           }
         />
 
@@ -129,5 +160,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: 16,
+  },
+  typingContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
 });

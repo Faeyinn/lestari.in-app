@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
-import {
-  View,
-  StyleSheet,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { UserCard } from '@/components/map/UserCard';
+import { HeatmapMarker } from '@/components/map/HeatmapMarker';
 import { PointsCard } from '@/components/map/PointsCard';
 import { SearchBar } from '@/components/map/SearchBar';
+import { UserCard } from '@/components/map/UserCard';
 import { WasteCard } from '@/components/map/WasteCard';
-import { HeatmapMarker } from '@/components/map/HeatmapMarker';
 import { BottomNav } from '@/components/navigation/BottomNav';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import {
+  StyleSheet,
+  View,
+} from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const INITIAL_REGION = {
   latitude: -0.9471,

@@ -1,26 +1,56 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { ProfileHeader } from '@/components/profile/ProfileHeader';
-import { ProfileBadge } from '@/components/profile/ProfileBadge';
-import { StatsCard } from '@/components/profile/StatsCard';
+import { BottomNav } from '@/components/navigation/BottomNav';
 import { BadgeAchievements } from '@/components/profile/BadgeAchievements';
 import { MenuButton } from '@/components/profile/MenuButton';
-import { BottomNav } from '@/components/navigation/BottomNav';
+import { ProfileBadge } from '@/components/profile/ProfileBadge';
+import { ProfileHeader } from '@/components/profile/ProfileHeader';
+import { StatsCard } from '@/components/profile/StatsCard';
+import { apiService } from '@/services/api';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+interface ProfileData {
+  name: string;
+  email: string;
+  city?: string;
+  points?: number;
+  reports_sent?: number;
+  reports_verified?: number;
+  environmental_guardian?: number;
+}
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await apiService.getProfile();
+        setProfileData(response.data);
+      } catch (error: any) {
+        Alert.alert('Error', 'Failed to load profile data');
+        // Redirect to login if not authenticated
+        router.replace('/login');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   const handleEditProfile = () => {
     // Navigate to edit profile
@@ -31,6 +61,18 @@ export default function ProfileScreen() {
     // Navigate to leaderboard
     router.push('/leaderboard');
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2D5F4F" />
+      </View>
+    );
+  }
+
+  if (!profileData) {
+    return null;
+  }
 
   return (
     <View style={styles.container}>
@@ -51,9 +93,9 @@ export default function ProfileScreen() {
                 entering={FadeInUp.delay(100).duration(600).springify()}
               >
                 <ProfileHeader
-                  name="Rahmat Fajar Saputra"
-                  city="Mahasiswa"
-                  email="rahmatfajarsaputra@gmail.com"
+                  name={profileData.name || "User"}
+                  city={profileData.city || "Mahasiswa"}
+                  email={profileData.email}
                 />
               </Animated.View>
             </SafeAreaView>
@@ -83,7 +125,7 @@ export default function ProfileScreen() {
             >
               <View style={styles.pointsContent}>
                 <View style={styles.pointsLeft}>
-                  <Text style={styles.userName}>Rahmat Fajar Saputra</Text>
+                  <Text style={styles.userName}>{profileData.name || "User"}</Text>
                   <Text style={styles.pointsLabel}>Total Poin Kontribusi</Text>
                   <Text style={styles.contribution}>
                     50 KG dari ditargetkan level 5
@@ -91,7 +133,7 @@ export default function ProfileScreen() {
                 </View>
 
                 <View style={styles.pointsRight}>
-                  <Text style={styles.pointsValue}>450</Text>
+                  <Text style={styles.pointsValue}>{profileData.points || 0}</Text>
                   <Text style={styles.pointsUnit}>Pts</Text>
                   <TouchableOpacity style={styles.exchangeButton}>
                     <Text style={styles.exchangeButtonText}>
@@ -118,9 +160,9 @@ export default function ProfileScreen() {
             entering={FadeInDown.delay(400).duration(600).springify()}
             style={styles.statsContainer}
           >
-            <StatsCard title="Laporan Dikirim" value="15" />
-            <StatsCard title="Laporan Terverifikasi" value="10" />
-            <StatsCard title="Penjaga Lingkungan" value="4" gradient />
+            <StatsCard title="Laporan Dikirim" value={profileData.reports_sent?.toString() || "0"} />
+            <StatsCard title="Laporan Terverifikasi" value={profileData.reports_verified?.toString() || "0"} />
+            <StatsCard title="Penjaga Lingkungan" value={profileData.environmental_guardian?.toString() || "0"} gradient />
           </Animated.View>
 
           {/* Badge Achievements */}
@@ -161,6 +203,12 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F5F5F5',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: '#F5F5F5',
   },
   scrollContent: {

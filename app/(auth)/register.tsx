@@ -1,20 +1,20 @@
+import { GoogleSignInButton } from '@/components/login/GoogleSignInButton';
+import { LoginButton } from '@/components/login/LoginButton';
+import { LoginInput } from '@/components/login/LoginInput';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
   Image,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { LoginInput } from '@/components/login/LoginInput';
-import { LoginButton } from '@/components/login/LoginButton';
-import { GoogleSignInButton } from '@/components/login/GoogleSignInButton';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const HEADER_HEIGHT = 160;
 const LOGO_SIZE = 88;
@@ -28,12 +28,26 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
+    if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
     setLoading(true);
-    // Implement your register logic here
-    setTimeout(() => {
+    try {
+      const response = await apiService.signup({ name, email, password });
+      Alert.alert('Success', 'Registration successful! Please login.');
+      router.push('/login');
+    } catch (error: any) {
+      Alert.alert('Error', error.message);
+    } finally {
       setLoading(false);
-      router.push('/dashboard');
-    }, 2000);
+    }
   };
 
   const handleGoogleSignUp = () => {

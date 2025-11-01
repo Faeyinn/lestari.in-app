@@ -1,20 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import { GoogleSignInButton } from '@/components/login/GoogleSignInButton';
+import { LoginButton } from '@/components/login/LoginButton';
+import { LoginInput } from '@/components/login/LoginInput';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
+  Alert,
   Image,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { apiService } from '@/services/api';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { LoginInput } from '@/components/login/LoginInput';
-import { LoginButton } from '@/components/login/LoginButton';
-import { GoogleSignInButton } from '@/components/login/GoogleSignInButton';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const HEADER_HEIGHT = 160;
 const LOGO_SIZE = 88;
@@ -26,12 +28,21 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
     setLoading(true);
-    // Implement your login logic here
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const response = await apiService.login({ email, password });
+      Alert.alert('Success', 'Login successful!');
       router.push('/map');
-    }, 2000);
+    } catch (error: any) {
+      Alert.alert('Error', error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleSignIn = () => {
@@ -41,7 +52,7 @@ export default function LoginScreen() {
 
   const handleForgotPassword = () => {
     // Navigate to forgot password screen
-    router.push('/forgot-password');
+    // router.push('/forgot-password'); // Commented out as route doesn't exist
   };
 
   const handleRegister = () => {
