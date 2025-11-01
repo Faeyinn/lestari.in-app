@@ -1,19 +1,21 @@
-import React, { useState } from 'react';
+import { ReportDescriptionInput } from '@/components/report/ReportDescriptionInput';
+import { ReportHeader } from '@/components/report/ReportHeader';
+import { ReportSubmitButton } from '@/components/report/ReportSubmitButton';
+import { apiService } from '@/services/api';
+import * as Location from 'expo-location';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  StyleSheet,
-  ScrollView,
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
-  Alert,
+  ScrollView,
+  StyleSheet,
+  View,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { ReportHeader } from '@/components/report/ReportHeader';
-import { ReportDescriptionInput } from '@/components/report/ReportDescriptionInput';
-import { ReportSubmitButton } from '@/components/report/ReportSubmitButton';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Menggunakan gambar placeholder sampah yang telah Anda sediakan
 const fallbackTrashImage = require('@/assets/images/placeholder-waste.png');
@@ -22,32 +24,97 @@ export default function ReportDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { imageUri } = params;
-  
+
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
+  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   // Dapatkan sumber gambar, gunakan fallback jika URI tidak ada
   const imageSource = imageUri ? { uri: imageUri as string } : fallbackTrashImage;
 
-  const handleSubmit = () => {
+  useEffect(() => {
+    const getLocation = async () => {
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission Denied', 'Location permission is required to submit reports.');
+          return;
+        }
+
+        console.log('Getting current position...');
+        let locationResult = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+          timeout: 15000,
+        });
+
+        console.log('Location obtained:', locationResult.coords);
+        setLocation({
+          latitude: locationResult.coords.latitude,
+          longitude: locationResult.coords.longitude,
+        });
+      } catch (error) {
+        console.error('Location error:', error);
+        Alert.alert('Location Error', 'Unable to get your location. Please check your GPS settings and try again.');
+      }
+    };
+    getLocation();
+  }, []);
+
+  const handleSubmit = async () => {
     if (!description.trim()) {
       Alert.alert('Deskripsi Kosong', 'Mohon masukkan deskripsi kondisi lingkungan.');
       return;
     }
 
+    if (!location) {
+      Alert.alert('Location Error', 'Unable to get your location. Please try again.');
+      return;
+    }
+
     setLoading(true);
-    console.log('Laporan Dikirim:', {
-      imageUri,
-      description,
-    });
-    
-    // Simulasi pengiriman API
-    setTimeout(() => {
-      setLoading(false);
-      Alert.alert('Laporan Terkirim', 'Terima kasih atas kontribusi Anda.', [
-        { text: 'OK', onPress: () => router.back() }, // Kembali setelah laporan terkirim
+    try {
+      console.log('Submitting report with location:', location);
+      const response = await apiService.submitReport({
+        image: imageUri as string,
+        description,
+        latitude: location.latitude,
+        longitude: location.longitude,
+      });
+      console.log('Report submitted successfully:', response);
+
+      // Show detailed classification results from Gemini analysis
+      const classifications = [];
+      if (response.data?.water_classification) classifications.push(`Air: ${response.data.water_classification}`);
+      if (response.data?.forest_classification) classifications.push(`Hutan: ${response.data.forest_classification}`);
+      if (response.data?.public_fire_classification) classifications.push(`Kebakaran Umum: ${response.data.public_fire_classification}`);
+      if (response.data?.trash_classification) classifications.push(`Sampah: ${response.data.trash_classification}`);
+      if (response.data?.illegal_logging_classification) classifications.push(`Penebangan Liar: ${response.data.illegal_logging_classification}`);
+
+      const classificationText = classifications.length > 0
+        ? `\nKlasifikasi: ${classifications.join(', ')}`
+        : '';
+
+      const message = `Laporan Terkirim!${classificationText}\nTerima kasih atas kontribusi Anda.`;
+
+      Alert.alert('Laporan Terkirim', message, [
+        { text: 'OK', onPress: () => router.back() },
       ]);
-    }, 1500);
+    } catch (error: any) {
+      console.error('Submit error:', error);
+
+      // Handle specific Gemini API errors
+      if (error.message?.includes('Failed to analyze image with Gemini')) {
+        Alert.alert(
+          'Laporan Terkirim',
+          'Laporan berhasil dikirim, namun analisis gambar sementara tidak tersedia. Terima kasih atas kontribusi Anda.',
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
+      } else {
+        Alert.alert('Error', error.message || 'Failed to submit report');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -1,6 +1,6 @@
-import axios, { AxiosResponse } from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL, API_ENDPOINTS, API_HEADERS } from '@/constants/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios, { AxiosResponse } from 'axios';
 
 interface SignupData {
   email: string;
@@ -19,6 +19,14 @@ interface ProfileData {
 
 interface ChatbotData {
   message: string;
+}
+
+interface ReportData {
+  image: string; // base64 or uri
+  description: string;
+  latitude: number;
+  longitude: number;
+  prediction?: string; // AI prediction result
 }
 
 interface ApiResponse<T = any> {
@@ -128,8 +136,79 @@ class ApiService {
     }
   }
 
+  async submitReport(data: ReportData): Promise<ApiResponse> {
+    try {
+      const formData = new FormData();
+      formData.append('image', {
+        uri: data.image,
+        type: 'image/jpeg',
+        name: 'report.jpg',
+      } as any);
+      formData.append('description', data.description);
+      formData.append('latitude', data.latitude.toString());
+      formData.append('longitude', data.longitude.toString());
+
+      console.log('Submitting report with data:', {
+        image: data.image,
+        description: data.description,
+        latitude: data.latitude,
+        longitude: data.longitude,
+      });
+
+      const response: AxiosResponse = await this.axiosInstance.post(API_ENDPOINTS.reports, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      console.log('Report submitted successfully:', response.data);
+      return {
+        data: response.data,
+        status: response.status,
+      };
+    } catch (error: any) {
+      console.error('Report submission error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Failed to submit report');
+    }
+  }
+
   async logout(): Promise<void> {
     await AsyncStorage.removeItem('access_token');
+  }
+
+  async getAllReports(): Promise<ApiResponse> {
+    try {
+      const response: AxiosResponse = await this.axiosInstance.get(API_ENDPOINTS.allReports);
+      return {
+        data: response.data,
+        status: response.status,
+      };
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to get all reports');
+    }
+  }
+
+  async getUserReports(): Promise<ApiResponse> {
+    try {
+      const response: AxiosResponse = await this.axiosInstance.get(API_ENDPOINTS.userReports);
+      return {
+        data: response.data,
+        status: response.status,
+      };
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to get user reports');
+    }
+  }
+
+  async getLeaderboard(): Promise<ApiResponse> {
+    try {
+      const response: AxiosResponse = await this.axiosInstance.get(API_ENDPOINTS.leaderboard);
+      return {
+        data: response.data,
+        status: response.status,
+      };
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to get leaderboard');
+    }
   }
 
   async isAuthenticated(): Promise<boolean> {

@@ -4,11 +4,14 @@ import { SearchBar } from '@/components/map/SearchBar';
 import { UserCard } from '@/components/map/UserCard';
 import { WasteCard } from '@/components/map/WasteCard';
 import { BottomNav } from '@/components/navigation/BottomNav';
+import { apiService } from '@/services/api';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import * as Location from 'expo-location';
+import React, { useEffect, useState } from 'react';
 import {
+  Alert,
   StyleSheet,
-  View,
+  View
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
@@ -94,10 +97,95 @@ const wasteLocations = [
 export default function MapScreen() {
   const [selectedWaste, setSelectedWaste] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [apiReports, setApiReports] = useState<any[]>([]);
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [userProfile, setUserProfile] = useState<{ name: string; points: number } | null>(null);
+
+  useEffect(() => {
+    fetchReports();
+    getUserLocation();
+    fetchUserProfile();
+  }, []);
+
+  const fetchReports = async () => {
+    try {
+      const response = await apiService.getAllReports();
+      const transformedReports = response.data.map((report: any) => ({
+        id: `api-${report.id}`,
+        coordinate: { latitude: report.latitude, longitude: report.longitude },
+        title: getCategoryFromReport(report),
+        category: report.verified ? 'Diverifikasi' : 'Belum ditindaklanjuti',
+        date: new Date(report.created_at).toLocaleDateString('id-ID'),
+        location: `Lat: ${report.latitude.toFixed(4)}, Lng: ${report.longitude.toFixed(4)}`,
+        image: report.image_url,
+        type: getTypeFromReport(report) as 'waste' | 'fire' | 'recycle',
+        intensity: 'medium' as const,
+      }));
+      setApiReports(transformedReports);
+    } catch (error) {
+      console.error('Failed to fetch reports:', error);
+    }
+  };
+
+  const getUserLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Location permission is required to show your location on the map.');
+        return;
+      }
+      const location = await Location.getCurrentPositionAsync({});
+      setUserLocation({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+    } catch (error) {
+      console.error('Failed to get user location:', error);
+    }
+  };
+
+  const getCategoryFromReport = (report: any): string => {
+    if (report.trash_classification) return 'Sampah';
+    if (report.forest_classification) return 'Kebakaran Hutan';
+    if (report.water_classification) return 'Kualitas Air';
+    if (report.illegal_logging_classification) return 'Penebangan Hutan';
+    if (report.public_fire_classification) return 'Kebakaran Umum';
+    return 'Laporan';
+  };
+
+  const getTypeFromReport = (report: any): string => {
+    if (report.trash_classification) return 'waste';
+    if (report.forest_classification || report.public_fire_classification) return 'fire';
+    if (report.illegal_logging_classification) return 'recycle';
+    return 'waste';
+  };
+
+  const fetchUserProfile = async () => {
+    try {
+      const response = await apiService.getProfile();
+      const apiData = response.data;
+      setUserProfile({
+        name: apiData.user?.name || 'User',
+        points: apiData.points || 0,
+      });
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error);
+      setUserProfile({
+        name: 'User',
+        points: 0,
+      });
+    }
+  };
 
   const handleMarkerPress = (waste: any) => {
     setSelectedWaste(waste);
   };
+
+  // Combine API reports with dummy data (keep 3 dummy)
+  const allWasteLocations = [
+    ...wasteLocations.slice(0, 3), // Keep first 3 dummy
+    ...apiReports,
+  ];
 
   return (
     <View style={styles.container}>
@@ -109,16 +197,18 @@ export default function MapScreen() {
         customMapStyle={mapStyle}
       >
         {/* User Location Marker */}
-        <Marker
-          coordinate={{ latitude: -0.9471, longitude: 100.4172 }}
-        >
-          <View style={styles.userMarker}>
-            <Ionicons name="person" size={20} color="#4A9D6F" />
-          </View>
-        </Marker>
+        {userLocation && (
+          <Marker
+            coordinate={userLocation}
+          >
+            <View style={styles.userMarker}>
+              <Ionicons name="person" size={20} color="#4A9D6F" />
+            </View>
+          </Marker>
+        )}
 
         {/* Waste Location Markers with Heatmap */}
-        {wasteLocations.map((waste) => (
+        {allWasteLocations.map((waste) => (
           <HeatmapMarker
             key={waste.id}
             coordinate={waste.coordinate}
@@ -137,10 +227,10 @@ export default function MapScreen() {
             entering={FadeInDown.delay(100).duration(600).springify()}
             style={styles.userCardContainer}
           >
-            <UserCard
-              name="Rahmat Fajar Saputra"
-              points={450}
-              contribution="50 XP lagi menuju level 5"
+          <UserCard
+              name={userProfile?.name || "User"}
+              points={userProfile?.points || 0}
+              contribution={userProfile ? "Kontribusi Anda" : "Login untuk melihat poin"}
             />
           </Animated.View>
 
@@ -150,7 +240,7 @@ export default function MapScreen() {
             style={styles.pointsCardContainer}
           >
             <PointsCard
-              points={300}
+              points={userProfile ? 500 - userProfile.points : 300}
               maxPoints={500}
             />
           </Animated.View>

@@ -1,10 +1,14 @@
-export const API_BASE_URL = 'https://d8b6c5c228a3.ngrok-free.app/';
+export const API_BASE_URL = 'https://212d861942a5.ngrok-free.app/';
 
 export const API_ENDPOINTS = {
-  signup: '/signup/',
-  login: '/login/',
-  profile: '/profile/',
-  chatbot: '/chatbot/',
+  signup: '/api/signup/',
+  login: '/api/login/',
+  profile: '/api/profile/',
+  chatbot: '/api/chatbot/',
+  reports: '/api/reports/',
+  allReports: '/api/reports/all/',
+  userReports: '/api/reports/user/',
+  leaderboard: '/api/leaderboard/',
 };
 
 export const API_HEADERS = {

@@ -1,39 +1,55 @@
-import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { apiService } from '@/services/api';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { PodiumItem } from './PodiumItem';
 import { RankItem } from './RankItem';
 
-// Data Mockup berdasarkan gambar
-const badge4 = require('@/assets/images/badge-4.png');
-const badge2 = require('@/assets/images/badge-2.png');
-
-const podiumData = [
-  { id: '1', rank: 1, name: 'Beyonder', xp: 1330, badge: badge4 },
-  { id: '2', rank: 2, name: 'Lestariiiinnn', xp: 1000, badge: badge4 },
-  { id: '3', rank: 3, name: 'heketon', xp: 680, badge: badge2 },
-];
-
-const listData = [
-  { id: '4', rank: 4, name: 'Rahmat Fajar Saputra', xp: 450, badge: badge2 },
-  { id: '5', rank: 5, name: 'Fadhillah Rahmad Kurnia', xp: 420, badge: badge2 },
-  { id: '6', rank: 6, name: 'Fadhillah Rahmad Kurnia', xp: 400, badge: badge2 },
-  { id: '7', rank: 7, name: 'Hanaviz', xp: 390, badge: badge2 },
-  { id: '8', rank: 8, name: 'Widia Khairunisa', xp: 350, badge: badge2 },
-  { id: '9', rank: 9, name: 'Rahmat Fajar Saputra', xp: 450, badge: badge2 },
-  { id: '10', rank: 10, name: 'Dedi Irwansyah', xp: 420, badge: badge2 },
-  { id: '11', rank: 11, name: 'Dedi Irwansyah', xp: 400, badge: badge2 },
-  { id: '12', rank: 12, name: 'Dedi Irwansyah', xp: 390, badge: badge2 },
-  { id: '13', rank: 13, name: 'Dedi Irwansyah', xp: 350, badge: badge2 },
-  { id: '14', rank: 14, name: 'Dedi Irwansyah', xp: 400, badge: badge2 },
-  { id: '15', rank: 15, name: 'Dedi Irwansyah', xp: 390, badge: badge2 },
-  { id: '16', rank: 16, name: 'Dedi Irwansyah', xp: 350, badge: badge2 },
-];
-
-// Gabungkan podium + list jadi satu array (urut berdasarkan rank)
-const combinedData = [...podiumData, ...listData].sort((a, b) => a.rank - b.rank);
+interface LeaderboardEntry {
+  id: string;
+  rank: number;
+  name: string;
+  points: number; // Assuming points instead of xp
+  badge?: string; // Optional, if API provides
+}
 
 export const LeaderboardList = () => {
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      setLoading(true);
+      try {
+        const response = await apiService.getLeaderboard();
+        console.log('Leaderboard data:', response.data);
+        // Assuming API returns an array of entries with id, rank, name, points
+        const data = response.data.map((item: any, index: number) => ({
+          id: item.id || index.toString(),
+          rank: item.rank || index + 1,
+          name: item.name || 'Unknown',
+          points: item.points || 0,
+          badge: item.badge, // If provided
+        }));
+        setLeaderboardData(data);
+      } catch (error: any) {
+        console.error('Leaderboard fetch error:', error);
+        Alert.alert('Error', 'Failed to load leaderboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLeaderboard();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2D5F4F" />
+      </View>
+    );
+  }
+
   return (
     <ScrollView
       style={styles.container}
@@ -41,7 +57,7 @@ export const LeaderboardList = () => {
       showsVerticalScrollIndicator={false}
     >
       <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.listContainer}>
-        {combinedData.map((item, index) => {
+        {leaderboardData.map((item, index) => {
           // Untuk rank 1-3 gunakan PodiumItem agar tampil beda, sisanya RankItem
           if (item.rank === 1 || item.rank === 2 || item.rank === 3) {
             return <PodiumItem key={item.id} entry={item as any} rank={item.rank as 1 | 2 | 3} />;
@@ -56,6 +72,11 @@ export const LeaderboardList = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   contentContainer: {
     padding: 16,

@@ -1,17 +1,18 @@
-import React, { useState } from 'react';
-import {
-  View,
-  StyleSheet,
-  FlatList,
-  RefreshControl,
-  ListRenderItem,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, { FadeInDown } from 'react-native-reanimated';
-import { ReportSearchBar } from '@/components/laporan/ReportSearchBar';
 import { LaporanCard, Report } from '@/components/laporan/LaporanCard';
-import { BottomNav } from '@/components/navigation/BottomNav';
 import { LaporanSegmentedControl } from '@/components/laporan/LaporanSegmentedControl';
+import { ReportSearchBar } from '@/components/laporan/ReportSearchBar';
+import { BottomNav } from '@/components/navigation/BottomNav';
+import { apiService } from '@/services/api';
+import React, { useEffect, useState } from 'react';
+import {
+  FlatList,
+  ListRenderItem,
+  RefreshControl,
+  StyleSheet,
+  View
+} from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // --- Data Laporan (Semua Laporan) ---
 const allReportsData: Report[] = [
@@ -138,15 +139,98 @@ export default function LaporanScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>('Semua Laporan');
+  const [apiReports, setApiReports] = useState<{ all: Report[]; user: Report[] }>({
+    all: [],
+    user: [],
+  });
+  const [loading, setLoading] = useState(false);
 
-  const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1500);
+  useEffect(() => {
+    fetchReports();
   }, []);
 
-  const dataToShow = activeTab === 'Semua Laporan' ? allReportsData : myReportsData;
+  const fetchReports = async () => {
+    try {
+      setLoading(true);
+      const [allReportsResponse, userReportsResponse] = await Promise.all([
+        apiService.getAllReports(),
+        apiService.getUserReports(),
+      ]);
+
+      // Transform API data to match Report interface
+      const transformReport = (apiReport: any): Report => ({
+        id: apiReport.id.toString(),
+        category: getCategoryFromClassifications(apiReport),
+        labels: getLabelsFromClassifications(apiReport),
+        location: `Lat: ${apiReport.latitude.toFixed(4)}, Lng: ${apiReport.longitude.toFixed(4)}`,
+        description: apiReport.description,
+        author: apiReport.user.name, // Use user's name from API
+        date: new Date(apiReport.created_at).toLocaleDateString('id-ID', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+        image: apiReport.image_url,
+        status: apiReport.verified ? 'Diverifikasi' : 'Menunggu Verifikasi',
+      });
+
+      setApiReports({
+        all: allReportsResponse.data.map(transformReport),
+        user: userReportsResponse.data.map(transformReport),
+      });
+    } catch (error) {
+      console.error('Failed to fetch reports:', error);
+      // Keep dummy data as fallback
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCategoryFromClassifications = (report: any): string => {
+    if (report.forest_classification) return 'Kebakaran Hutan';
+    if (report.trash_classification) return 'Sampah';
+    if (report.water_classification) return 'Kualitas Air';
+    if (report.illegal_logging_classification) return 'Penebangan Hutan';
+    if (report.public_fire_classification) return 'Kebakaran Umum';
+    return 'Laporan Umum';
+  };
+
+  const getLabelsFromClassifications = (report: any): string[] => {
+    const labels: string[] = [];
+    if (report.forest_classification) labels.push(report.forest_classification);
+    if (report.trash_classification) labels.push(report.trash_classification);
+    if (report.water_classification) labels.push(report.water_classification);
+    if (report.illegal_logging_classification) labels.push(report.illegal_logging_classification);
+    if (report.public_fire_classification) labels.push(report.public_fire_classification);
+    return labels.length > 0 ? labels : ['Laporan'];
+  };
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await fetchReports();
+    setRefreshing(false);
+  }, []);
+
+  // Use API data if available, otherwise fall back to dummy data with 2 dummy entries appended
+  const getDataToShow = () => {
+    if (activeTab === 'Semua Laporan') {
+      const apiData = apiReports.all.length > 0 ? apiReports.all : allReportsData;
+      const appendedDummies = allReportsData.slice(0, 2).map((item, index) => ({
+        ...item,
+        id: `appended-${index}-${item.id}`, // Ensure unique IDs
+      }));
+      return [...apiData, ...appendedDummies]; // Append 2 dummy entries
+    } else {
+      const apiData = apiReports.user.length > 0 ? apiReports.user : myReportsData;
+      const appendedDummies = myReportsData.slice(0, 2).map((item, index) => ({
+        ...item,
+        id: `appended-${index}-${item.id}`, // Ensure unique IDs
+      }));
+      return [...apiData, ...appendedDummies]; // Append 2 dummy entries
+    }
+  };
+
+  const dataToShow = getDataToShow();
 
   // Filter data berdasarkan searchQuery
   const filteredReports = dataToShow.filter((report) =>

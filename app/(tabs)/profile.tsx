@@ -42,23 +42,44 @@ export default function ProfileScreen() {
     reports_verified: 10,
     rank: 4,
   });
-  const [loading, setLoading] = useState(false); // Dimatikan untuk preview
+  const [loading, setLoading] = useState(true);
 
-  // useEffect(() => {
-  //   const fetchProfile = async () => {
-  //     setLoading(true);
-  //     try {
-  //       const response = await apiService.getProfile();
-  //       setProfileData(response.data);
-  //     } catch (error: any) {
-  //       Alert.alert('Error', 'Failed to load profile data');
-  //       router.replace('/login');
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-  //   fetchProfile();
-  // }, []);
+  useEffect(() => {
+    const fetchProfile = async () => {
+      setLoading(true);
+      try {
+        const profileResponse = await apiService.getProfile();
+        const reportsResponse = await apiService.getUserReports();
+        console.log('Profile data:', profileResponse.data);
+        console.log('User reports data:', reportsResponse.data);
+
+        // Map API response to expected format
+        const apiData = profileResponse.data;
+        const reportsData = reportsResponse.data;
+
+        // Calculate reports sent and verified from user reports
+        const reportsSent = reportsData.length || 0;
+        const reportsVerified = reportsData.filter((report: any) => report.status === 'verified').length || 0;
+
+        setProfileData({
+          name: apiData.user?.name || 'User',
+          email: apiData.user?.email || '',
+          city: apiData.city || 'Mahasiswa',
+          points: apiData.points || 0,
+          reports_sent: reportsSent,
+          reports_verified: reportsVerified,
+          rank: apiData.rank || 0,
+        });
+      } catch (error: any) {
+        console.error('Profile fetch error:', error);
+        Alert.alert('Error', 'Failed to load profile data');
+        router.replace('/login');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const handleEditProfile = () => {
     router.push('/edit-profile');
@@ -135,7 +156,7 @@ export default function ProfileScreen() {
               entering={FadeInDown.delay(400).duration(600)}
               style={styles.remainingPointsContainer}
             >
-              <RemainingPointsCard points={300} />
+              <RemainingPointsCard points={500 - (profileData.points || 0)} />
             </Animated.View>
           </View>
 
