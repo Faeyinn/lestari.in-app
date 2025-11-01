@@ -8,6 +8,7 @@ export const API_ENDPOINTS = {
   reports: '/api/reports/',
   allReports: '/api/reports/all/',
   userReports: '/api/reports/user/',
+  redeem: '/api/redeem/',
   leaderboard: '/api/leaderboard/',
 };
 

@@ -211,6 +211,18 @@ class ApiService {
     }
   }
 
+  async redeemVoucher(voucherId: string): Promise<ApiResponse> {
+    try {
+      const response: AxiosResponse = await this.axiosInstance.post(API_ENDPOINTS.redeem, { voucher_id: voucherId });
+      return {
+        data: response.data,
+        status: response.status,
+      };
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to redeem voucher');
+    }
+  }
+
   // NEW: helper untuk langsung mengambil angka points dari profile
   async getPoints(): Promise<number> {
     try {

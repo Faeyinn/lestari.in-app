@@ -4,17 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import {
-    ActivityIndicator,
-    Alert,
-    ImageBackground,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from 'react-native';
+import { ActivityIndicator, Alert, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface Voucher {
   id: string;
@@ -38,16 +29,19 @@ export default function TukarPoinScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [points, setPoints] = useState<number>(0);
+  const MAX_POINTS = 500;
+  const [redeemLoading, setRedeemLoading] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
     async function load() {
       setLoading(true);
       try {
-        const resp = await apiService.getProfile();
-        const apiPoints = resp.data?.points ?? 0;
+        // Prefer helper that returns points number
+        const apiPoints = await apiService.getPoints();
         if (mounted) setPoints(apiPoints);
-      } catch (e) {
+      } catch (e: any) {
+        console.warn('Failed to load profile points', e);
         // fallback to 0
         if (mounted) setPoints(0);
       } finally {
@@ -58,13 +52,36 @@ export default function TukarPoinScreen() {
     return () => { mounted = false; };
   }, []);
 
-  const handleRedeem = (v: Voucher) => {
-    if (points >= v.cost) {
-      Alert.alert('Berhasil', `Anda menukar ${v.cost} XP untuk "${v.title}"`);
-      // Di sini panggil API redeem jika tersedia; requirement: jangan ubah logic API — so hanya UI/alert
-    } else {
+  const handleRedeem = async (v: Voucher) => {
+    if (points < v.cost) {
       Alert.alert('Poin tidak cukup', 'Anda tidak memiliki cukup poin untuk menukar voucher ini.');
+      return;
     }
+
+    Alert.alert('Konfirmasi', `Tukar ${v.cost} XP untuk "${v.title}"?`, [
+      { text: 'Batal', style: 'cancel' },
+      {
+        text: 'Tukar',
+        onPress: async () => {
+          setRedeemLoading(v.id);
+          try {
+            // Try calling backend redeem endpoint
+            const resp = await apiService.redeemVoucher(v.id);
+            console.log('Redeem response:', resp.data);
+            // After successful redeem, refresh points from backend
+            const newPoints = await apiService.getPoints();
+            setPoints(newPoints);
+            Alert.alert('Berhasil', resp.data?.message || `Berhasil menukar ${v.cost} XP untuk "${v.title}"`);
+          } catch (err: any) {
+            console.error('Redeem failed', err);
+            // If API not available or failed, show friendly message
+            Alert.alert('Gagal menukar', err?.message || 'Redeem gagal. Silakan coba lagi.');
+          } finally {
+            setRedeemLoading(null);
+          }
+        }
+      }
+    ]);
   };
 
   return (
@@ -82,11 +99,14 @@ export default function TukarPoinScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.pointsRow}>
           <View style={styles.pointsBox}>
-            <Text style={styles.pointsLabel}>Sisa Poin</Text>
+            <Text style={styles.pointsLabel}>Poin Didapat</Text>
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.pointsValue}>{points} XP</Text>
+              <>
+                <Text style={styles.pointsValue}>{points} XP</Text>
+                <Text style={styles.pointsSmall}>{Math.max(0, MAX_POINTS - points)} XP lagi menuju level selanjutnya</Text>
+              </>
             )}
           </View>
         </View>
@@ -113,8 +133,12 @@ export default function TukarPoinScreen() {
               {/* Footer area */}
               <View style={styles.cardFooter}>
                 <Text style={styles.costText}>{v.cost} XP</Text>
-                <TouchableOpacity style={styles.redeemButton} onPress={() => handleRedeem(v)}>
-                  <Text style={styles.redeemButtonText}>Tukar Sekarang</Text>
+                <TouchableOpacity style={styles.redeemButton} onPress={() => handleRedeem(v)} disabled={!!redeemLoading}>
+                  {redeemLoading === v.id ? (
+                    <ActivityIndicator color="#2D5F4F" />
+                  ) : (
+                    <Text style={styles.redeemButtonText}>Tukar Sekarang</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
@@ -167,6 +191,7 @@ const styles = StyleSheet.create({
   },
   pointsLabel: { color: '#D1FAE5', fontSize: 12, fontWeight: '700' },
   pointsValue: { color: '#FFFFFF', fontSize: 24, fontWeight: '900', marginTop: 6 },
+  pointsSmall: { color: 'rgba(255,255,255,0.9)', fontSize: 12, marginTop: 6 },
 
   list: {
     marginTop: 16,
