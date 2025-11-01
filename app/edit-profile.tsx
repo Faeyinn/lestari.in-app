@@ -1,25 +1,98 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { BottomNav } from '@/components/navigation/BottomNav';
+import { EditProfileHeader } from '@/components/edit-profile/EditProfileHeader';
+import { FormInput } from '@/components/edit-profile/FormInput';
+import { FormPicker } from '@/components/edit-profile/FormPicker';
+import { ProfileAvatar } from '@/components/edit-profile/ProfileAvatar';
+import { SaveButton } from '@/components/edit-profile/SaveButton';
+import React, { useState } from 'react';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 
 export default function EditProfileScreen() {
-  const router = useRouter();
+  const [name, setName] = useState('');
+  const [job, setJob] = useState('Pekerjaan');
+  const [phone, setPhone] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSave = () => {
+    setLoading(true);
+    // Logika simpan data
+    setTimeout(() => {
+      setLoading(false);
+      Alert.alert('Sukses', 'Profil berhasil diperbarui.');
+    }, 1500);
+  };
+
+  const handlePickJob = () => {
+    // Di aplikasi nyata, ini akan membuka Modal atau ActionSheet
+    Alert.alert('Pilih Pekerjaan', 'Fitur ini akan segera hadir!');
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#1F2937" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profil</Text>
-        <View style={styles.placeholder} />
-      </View>
-      <View style={styles.content}>
-        <Text style={styles.title}>Edit Profile</Text>
-        <Text style={styles.subtitle}>Coming Soon...</Text>
-      </View>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          {/* Header Melengkung */}
+          <EditProfileHeader />
+
+          {/* Konten Form */}
+          <View style={styles.contentContainer}>
+            {/* Avatar */}
+            <ProfileAvatar />
+
+            {/* Form */}
+            <FormInput
+              label="Nama"
+              placeholder="Enter your Name"
+              value={name}
+              onChangeText={setName}
+              animationDelay={300}
+            />
+            <FormPicker
+              label="Pekerjaan"
+              value={job}
+              onPress={handlePickJob}
+              animationDelay={400}
+            />
+            <FormInput
+              label="No.HP"
+              placeholder="Masukkan No. HP"
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+              animationDelay={500}
+            />
+
+            {/* Tombol Simpan */}
+            <View style={styles.buttonWrapper}>
+              <SaveButton
+                title="Simpan"
+                onPress={handleSave}
+                loading={loading}
+                animationDelay={600}
+              />
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* Navigasi Bawah */}
+        <BottomNav activeRoute="profile" />
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -27,45 +100,19 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F3F4F6', // Latar belakang abu-abu muda
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  placeholder: {
-    width: 40,
-  },
-  content: {
+  flex: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 8,
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 120, // Ruang untuk BottomNav
   },
-  subtitle: {
-    fontSize: 16,
-    fontWeight: '400',
-    color: '#6B7280',
+  contentContainer: {
+    paddingHorizontal: 24,
+  },
+  buttonWrapper: {
+    marginTop: 16,
   },
 });
